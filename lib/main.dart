@@ -500,6 +500,9 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
   final Map<String, String?> _selectedDishes = {
     for (final day in WeeksMenuPage.daysOfWeek) day: null,
   };
+  final Map<String, bool> _cooked = {
+    for (final day in WeeksMenuPage.daysOfWeek) day: false,
+  };
 
   Future<void> _selectDish(BuildContext context, String day) async {
     // Get available dishes from MainApp.dishes
@@ -538,6 +541,7 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
     if (result != null) {
       setState(() {
         _selectedDishes[day] = result;
+        _cooked[day] = false; // Reset cooked status when dish changes
       });
     }
   }
@@ -551,6 +555,7 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
       itemBuilder: (context, index) {
         final day = WeeksMenuPage.daysOfWeek[index];
         final dish = _selectedDishes[day];
+        final cooked = _cooked[day] ?? false;
         // Find the selected dish's category color if any
         Color cardColor = kCardColor;
         if (dish != null) {
@@ -568,23 +573,43 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    day,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  if (dish != null)
-                    Flexible(
-                      child: Text(
-                        dish,
-                        style: const TextStyle(
-                            fontSize: 18, color: Colors.black54),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          day,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        if (dish != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              dish,
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black54),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
+                  Transform.scale(
+                    scale: 1.4,
+                    child: Checkbox(
+                      value: cooked,
+                      onChanged: dish == null
+                          ? null
+                          : (val) {
+                              setState(() {
+                                _cooked[day] = val ?? false;
+                              });
+                            },
+                    ),
+                  ),
                 ],
               ),
             ),

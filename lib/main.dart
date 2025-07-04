@@ -122,64 +122,6 @@ class _MainAppState extends State<MainApp> {
     DishStorage.saveDishes(_dishes);
   }
 
-  Future<void> showAddDishDialog(
-      BuildContext context, void Function(Dish) onAdd) async {
-    final _formKey = GlobalKey<FormState>();
-    String name = '';
-    DishCategory? category;
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add New Dish'),
-          content: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Dish Name'),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Please enter a name'
-                      : null,
-                  onChanged: (value) => name = value,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<DishCategory>(
-                  value: category,
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  items: DishCategory.values
-                      .map((cat) => DropdownMenuItem(
-                            value: cat,
-                            child: Text(categoryToString(cat)),
-                          ))
-                      .toList(),
-                  onChanged: (cat) => category = cat,
-                  validator: (value) =>
-                      value == null ? 'Please select a category' : null,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  onAdd(Dish(name: name.trim(), count: 0, category: category!));
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +325,7 @@ class DishList extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _categoryToString(dish.category),
+                                categoryToString(dish.category),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.black38,
@@ -403,22 +345,6 @@ class DishList extends StatelessWidget {
     );
   }
 
-  String _categoryToString(DishCategory category) {
-    switch (category) {
-      case DishCategory.egg:
-        return 'Egg';
-      case DishCategory.pork:
-        return 'Pork';
-      case DishCategory.beef:
-        return 'Beef';
-      case DishCategory.fish:
-        return 'Fish';
-      case DishCategory.tofu:
-        return 'Tofu';
-      case DishCategory.other:
-        return 'Other';
-    }
-  }
 }
 
 class DishDetailPage extends StatelessWidget {
@@ -441,7 +367,7 @@ class DishDetailPage extends StatelessWidget {
           children: [
             const SizedBox(height: 16),
             Text(
-              'Category: ${_categoryToString(dish.category)}',
+              'Category: ${categoryToString(dish.category)}',
               style: const TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 16),
@@ -468,22 +394,6 @@ class DishDetailPage extends StatelessWidget {
     );
   }
 
-  String _categoryToString(DishCategory category) {
-    switch (category) {
-      case DishCategory.egg:
-        return 'Egg';
-      case DishCategory.pork:
-        return 'Pork';
-      case DishCategory.beef:
-        return 'Beef';
-      case DishCategory.fish:
-        return 'Fish';
-      case DishCategory.tofu:
-        return 'Tofu';
-      case DishCategory.other:
-        return 'Other';
-    }
-  }
 }
 
 // Helper for category display names

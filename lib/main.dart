@@ -9,6 +9,15 @@ class AppConstants {
 
 const Color kCardColor = Color(0xFFBBDEFB); // Colors.blue[100]
 
+const Map<DishCategory, Color> kCategoryColors = {
+  DishCategory.egg: Color(0xFFFFF9C4), // light yellow
+  DishCategory.pork: Color(0xFFFFCCBC), // light orange
+  DishCategory.beef: Color(0xFFD7CCC8), // light brown
+  DishCategory.fish: Color(0xFFB3E5FC), // light blue
+  DishCategory.tofu: Color(0xFFC8E6C9), // light green
+  DishCategory.other: Color(0xFFE0E0E0), // light grey
+};
+
 enum DishCategory { egg, pork, beef, fish, tofu, other }
 
 class Dish {
@@ -182,7 +191,7 @@ class _MainAppState extends State<MainApp> {
         child: Builder(
           builder: (context) => Scaffold(
             appBar: AppBar(
-              title: const Text('Family Eating'),
+              toolbarHeight: 0,
               centerTitle: true,
               bottom: const TabBar(
                 tabs: [
@@ -201,7 +210,6 @@ class _MainAppState extends State<MainApp> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 16),
                             Row(
                               children: [
                                 const Text('Filter: ',
@@ -246,20 +254,34 @@ class _MainAppState extends State<MainApp> {
                 return AnimatedBuilder(
                   animation: tabController,
                   builder: (context, child) {
-                    // Show FAB only on the Food Planning tab (index 1)
-                    return tabController.index == 1
-                        ? FloatingActionButton(
-                            onPressed: () async {
-                              await showAddDishDialog(context, (newDish) {
-                                setState(() {
-                                  _dishes.add(newDish);
-                                });
-                                DishStorage.saveDishes(_dishes);
-                              });
-                            },
-                            child: const Icon(Icons.add),
-                          )
-                        : const SizedBox.shrink();
+                    if (tabController.index == 0) {
+                      // Week's Menu tab
+                      return FloatingActionButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'Add to week\'s menu (not implemented yet)')),
+                          );
+                        },
+                        child: const Icon(Icons.add),
+                      );
+                    } else if (tabController.index == 1) {
+                      // Food Planning tab
+                      return FloatingActionButton(
+                        onPressed: () async {
+                          await showAddDishDialog(context, (newDish) {
+                            setState(() {
+                              _dishes.add(newDish);
+                            });
+                            DishStorage.saveDishes(_dishes);
+                          });
+                        },
+                        child: const Icon(Icons.add),
+                      );
+                    } else {
+                      return const SizedBox.shrink();
+                    }
                   },
                 );
               },
@@ -309,7 +331,7 @@ class DishList extends StatelessWidget {
                     child: InkWell(
                       onTap: () => _openDishDetail(context, dish),
                       child: Card(
-                        color: kCardColor,
+                        color: kCategoryColors[dish.category] ?? kCardColor,
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
                           child: Row(
@@ -457,13 +479,118 @@ String categoryToString(DishCategory category) {
   }
 }
 
-class WeeksMenuPage extends StatelessWidget {
+class WeeksMenuPage extends StatefulWidget {
   const WeeksMenuPage({super.key});
+
+  static const List<String> daysOfWeek = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  @override
+  State<WeeksMenuPage> createState() => _WeeksMenuPageState();
+}
+
+class _WeeksMenuPageState extends State<WeeksMenuPage> {
+  final Map<String, String?> _selectedDishes = {
+    for (final day in WeeksMenuPage.daysOfWeek) day: null,
+  };
+
+  Future<void> _selectDish(BuildContext context, String day) async {
+    // Get available dishes from MainApp.dishes
+    final dishes = MainApp.dishes;
+    String? selected = _selectedDishes[day];
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select dish for $day'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: dishes.map((dish) {
+                return RadioListTile<String>(
+                  title: Text(dish.name),
+                  value: dish.name,
+                  groupValue: selected,
+                  onChanged: (value) {
+                    Navigator.of(context).pop(value);
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result != null) {
+      setState(() {
+        _selectedDishes[day] = result;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Ongoing week\'s menu will appear here.'),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: WeeksMenuPage.daysOfWeek.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final day = WeeksMenuPage.daysOfWeek[index];
+        final dish = _selectedDishes[day];
+        // Find the selected dish's category color if any
+        Color cardColor = kCardColor;
+        if (dish != null) {
+          final selectedDish = MainApp.dishes.firstWhere(
+            (d) => d.name == dish,
+            orElse: () =>
+                Dish(name: '', count: 0, category: DishCategory.other),
+          );
+          cardColor = kCategoryColors[selectedDish.category] ?? kCardColor;
+        }
+        return InkWell(
+          onTap: () => _selectDish(context, day),
+          child: Card(
+            color: cardColor,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    day,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  if (dish != null)
+                    Flexible(
+                      child: Text(
+                        dish,
+                        style: const TextStyle(
+                            fontSize: 18, color: Colors.black54),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

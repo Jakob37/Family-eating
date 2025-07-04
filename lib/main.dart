@@ -497,17 +497,33 @@ class WeeksMenuPage extends StatefulWidget {
 }
 
 class _WeeksMenuPageState extends State<WeeksMenuPage> {
-  final Map<String, String?> _selectedDishes = {
-    for (final day in WeeksMenuPage.daysOfWeek) day: null,
+  Map<String, WeeksMenuEntry> _menu = {
+    for (final day in WeeksMenuPage.daysOfWeek) day: WeeksMenuEntry()
   };
-  final Map<String, bool> _cooked = {
-    for (final day in WeeksMenuPage.daysOfWeek) day: false,
-  };
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMenu();
+  }
+
+  Future<void> _loadMenu() async {
+    final loaded =
+        await DishStorageWeeksMenu.loadWeeksMenu(WeeksMenuPage.daysOfWeek);
+    setState(() {
+      _menu = loaded;
+      _loading = false;
+    });
+  }
+
+  Future<void> _saveMenu() async {
+    await DishStorageWeeksMenu.saveWeeksMenu(_menu);
+  }
 
   Future<void> _selectDish(BuildContext context, String day) async {
-    // Get available dishes from MainApp.dishes
     final dishes = MainApp.dishes;
-    String? selected = _selectedDishes[day];
+    String? selected = _menu[day]?.dishName;
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -540,22 +556,25 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
     );
     if (result != null) {
       setState(() {
-        _selectedDishes[day] = result;
-        _cooked[day] = false; // Reset cooked status when dish changes
+        _menu[day] = WeeksMenuEntry(dishName: result, cooked: false);
       });
+      _saveMenu();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: WeeksMenuPage.daysOfWeek.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final day = WeeksMenuPage.daysOfWeek[index];
-        final dish = _selectedDishes[day];
-        final cooked = _cooked[day] ?? false;
+        final dish = _menu[day]?.dishName;
+        final cooked = _menu[day]?.cooked ?? false;
         // Find the selected dish's category color if any
         Color cardColor = kCardColor;
         if (dish != null) {
@@ -605,8 +624,10 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
                           ? null
                           : (val) {
                               setState(() {
-                                _cooked[day] = val ?? false;
+                                _menu[day] = WeeksMenuEntry(
+                                    dishName: dish, cooked: val ?? false);
                               });
+                              _saveMenu();
                             },
                     ),
                   ),

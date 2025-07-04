@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dish_storage.dart';
 
 class AppConstants {
   static const double dishFontSize = 16.0;
@@ -15,6 +16,20 @@ class Dish {
   final DishCategory category;
 
   Dish({required this.name, required this.count, required this.category});
+
+  factory Dish.fromJson(Map<String, dynamic> json) {
+    return Dish(
+      name: json['name'] as String,
+      count: json['count'] as int,
+      category: DishCategory.values[json['category'] as int],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'count': count,
+        'category': category.index,
+      };
 }
 
 void main() {
@@ -69,13 +84,21 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   late List<Dish> _dishes;
   DishCategory? _selectedCategory;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _dishes = MainApp.dishes
+    _loadDishes();
+  }
+
+  Future<void> _loadDishes() async {
+    _dishes = await DishStorage.loadDishes(MainApp.dishes
         .map((d) => Dish(name: d.name, count: d.count, category: d.category))
-        .toList();
+        .toList());
+    setState(() {
+      _loading = false;
+    });
   }
 
   void _incrementDishCount(String dishName) {
@@ -83,6 +106,7 @@ class _MainAppState extends State<MainApp> {
       final dish = _dishes.firstWhere((d) => d.name == dishName);
       dish.count += 1;
     });
+    DishStorage.saveDishes(_dishes);
   }
 
   @override
@@ -93,51 +117,68 @@ class _MainAppState extends State<MainApp> {
         : _dishes.where((d) => d.category == _selectedCategory).toList();
 
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Food planning'),
-          centerTitle: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Filter: ', style: TextStyle(fontSize: 16)),
-                  DropdownButton<DishCategory?>(
-                    value: _selectedCategory,
-                    hint: const Text('All'),
-                    items: [
-                      const DropdownMenuItem<DishCategory?>(
-                        value: null,
-                        child: Text('All'),
-                      ),
-                      ...DishCategory.values
-                          .map((cat) => DropdownMenuItem<DishCategory?>(
-                                value: cat,
-                                child: Text(categoryToString(cat)),
-                              )),
-                    ],
-                    onChanged: (cat) {
-                      setState(() {
-                        _selectedCategory = cat;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: DishList(
-                  dishes: filteredDishes,
-                  onIncrement: _incrementDishCount,
-                ),
-              ),
-            ],
+      home: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Family Eating'),
+            centerTitle: true,
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: "Week's Menu"),
+                Tab(text: 'Food Planning'),
+              ],
+            ),
           ),
+          body: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                  children: [
+                    const WeeksMenuPage(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Text('Filter: ',
+                                  style: TextStyle(fontSize: 16)),
+                              DropdownButton<DishCategory?>(
+                                value: _selectedCategory,
+                                hint: const Text('All'),
+                                items: [
+                                  const DropdownMenuItem<DishCategory?>(
+                                    value: null,
+                                    child: Text('All'),
+                                  ),
+                                  ...DishCategory.values.map(
+                                      (cat) => DropdownMenuItem<DishCategory?>(
+                                            value: cat,
+                                            child: Text(categoryToString(cat)),
+                                          )),
+                                ],
+                                onChanged: (cat) {
+                                  setState(() {
+                                    _selectedCategory = cat;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: DishList(
+                              dishes: filteredDishes,
+                              onIncrement: _incrementDishCount,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -327,5 +368,16 @@ String categoryToString(DishCategory category) {
       return 'Tofu';
     case DishCategory.other:
       return 'Other';
+  }
+}
+
+class WeeksMenuPage extends StatelessWidget {
+  const WeeksMenuPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Ongoing week\'s menu will appear here.'),
+    );
   }
 }

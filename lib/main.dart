@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dish_storage.dart';
 import 'package:flutter/services.dart';
 import 'ui_components.dart';
+import 'package:intl/intl.dart';
 
 class AppConstants {
   static const double dishFontSize = 16.0;
@@ -525,25 +526,39 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
   Map<String, WeeksMenuEntry> _menu = {
     for (final day in WeeksMenuPage.daysOfWeek) day: WeeksMenuEntry()
   };
+  String _label = '';
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadMenu();
+    _loadMenuAndLabel();
   }
 
-  Future<void> _loadMenu() async {
+  Future<void> _loadMenuAndLabel() async {
     final loaded =
         await DishStorageWeeksMenu.loadWeeksMenu(WeeksMenuPage.daysOfWeek);
+    String label = await DishStorageWeeksMenu.loadWeeksMenuLabel();
+    if (label.isEmpty) {
+      // Default to current week (ISO week number)
+      final now = DateTime.now();
+      final weekOfYear = int.parse(DateFormat('w').format(now));
+      final year = now.year;
+      label = 'Week $weekOfYear, $year';
+    }
     setState(() {
       _menu = loaded;
+      _label = label;
       _loading = false;
     });
   }
 
   Future<void> _saveMenu() async {
     await DishStorageWeeksMenu.saveWeeksMenu(_menu);
+  }
+
+  Future<void> _saveLabel(String label) async {
+    await DishStorageWeeksMenu.saveWeeksMenuLabel(label);
   }
 
   Future<void> _selectDish(BuildContext context, String day) async {
@@ -594,13 +609,35 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: WeeksMenuPage.daysOfWeek.length,
+      itemCount: WeeksMenuPage.daysOfWeek.length + 1,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final day = WeeksMenuPage.daysOfWeek[index];
-        final dish = _menu[day]?.dishName;
-        final cooked = _menu[day]?.cooked ?? false;
-        // Find the selected dish's category color if any
+        if (index == 0) {
+          // Label at the top
+          return Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: _label,
+                  decoration: const InputDecoration(
+                    labelText: 'Week label',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      _label = val;
+                    });
+                    _saveLabel(val);
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+        final day = WeeksMenuPage.daysOfWeek[index - 1];
+        final entry = _menu[day] ?? WeeksMenuEntry();
+        final dish = entry.dishName;
+        final cooked = entry.cooked;
         Color cardColor = kCardColor;
         if (dish != null) {
           final selectedDish = MainApp.dishes.firstWhere(

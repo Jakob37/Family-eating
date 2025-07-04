@@ -42,6 +42,7 @@ class WeeksMenuEntry {
 
 class DishStorageWeeksMenu {
   static const String _weeksMenuKey = 'weeks_menu_data';
+  static const String _weeksMenuLabelKey = 'weeks_menu_label';
 
   static Future<Map<String, WeeksMenuEntry>> loadWeeksMenu(
       List<String> daysOfWeek) async {
@@ -66,5 +67,15 @@ class DishStorageWeeksMenu {
       for (final entry in menu.entries) entry.key: entry.value.toJson(),
     });
     await prefs.setString(_weeksMenuKey, jsonString);
+  }
+
+  static Future<String> loadWeeksMenuLabel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_weeksMenuLabelKey) ?? '';
+  }
+
+  static Future<void> saveWeeksMenuLabel(String label) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_weeksMenuLabelKey, label);
   }
 }

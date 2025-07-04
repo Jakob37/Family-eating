@@ -79,3 +79,45 @@ class DishStorageWeeksMenu {
     await prefs.setString(_weeksMenuLabelKey, label);
   }
 }
+
+class WeeksMenuHistoryEntry {
+  final String label;
+  final Map<String, WeeksMenuEntry> menu;
+  WeeksMenuHistoryEntry({required this.label, required this.menu});
+
+  factory WeeksMenuHistoryEntry.fromJson(Map<String, dynamic> json) =>
+      WeeksMenuHistoryEntry(
+        label: json['label'] as String,
+        menu: (json['menu'] as Map<String, dynamic>)
+            .map((k, v) => MapEntry(k, WeeksMenuEntry.fromJson(v))),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        'menu': {
+          for (final entry in menu.entries) entry.key: entry.value.toJson()
+        },
+      };
+}
+
+class DishStorageWeeksMenuHistory {
+  static const String _weeksMenuHistoryKey = 'weeks_menu_history';
+
+  static Future<List<WeeksMenuHistoryEntry>> loadWeeksMenuHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_weeksMenuHistoryKey);
+    if (jsonString != null) {
+      final List<dynamic> jsonList = json.decode(jsonString);
+      return jsonList.map((e) => WeeksMenuHistoryEntry.fromJson(e)).toList();
+    } else {
+      return [];
+    }
+  }
+
+  static Future<void> saveWeeksMenuHistory(
+      List<WeeksMenuHistoryEntry> history) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = json.encode(history.map((e) => e.toJson()).toList());
+    await prefs.setString(_weeksMenuHistoryKey, jsonString);
+  }
+}

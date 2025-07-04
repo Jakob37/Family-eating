@@ -97,7 +97,8 @@ class _MainAppState extends State<MainApp> {
   late List<Dish> _dishes;
   DishCategory? _selectedCategory;
   bool _loading = true;
-  final GlobalKey<_WeeksMenuPageState> _weeksMenuKey = GlobalKey<_WeeksMenuPageState>();
+  final GlobalKey<_WeeksMenuPageState> _weeksMenuKey =
+      GlobalKey<_WeeksMenuPageState>();
 
   @override
   void initState() {
@@ -574,7 +575,19 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
     );
   }
 
-  void clearWeek() {
+  Future<void> clearWeek() async {
+    // Save to history first
+    final label = _label;
+    final menuCopy = {
+      for (final e in _menu.entries)
+        e.key:
+            WeeksMenuEntry(dishName: e.value.dishName, cooked: e.value.cooked)
+    };
+    final entry = WeeksMenuHistoryEntry(label: label, menu: menuCopy);
+    final history = await DishStorageWeeksMenuHistory.loadWeeksMenuHistory();
+    history.add(entry);
+    await DishStorageWeeksMenuHistory.saveWeeksMenuHistory(history);
+    // Clear current week
     setState(() {
       _menu = {
         for (final day in WeeksMenuPage.daysOfWeek) day: WeeksMenuEntry()
@@ -584,13 +597,95 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
   }
 }
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
   @override
+  State<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+  List<WeeksMenuHistoryEntry> _history = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final history = await DishStorageWeeksMenuHistory.loadWeeksMenuHistory();
+    setState(() {
+      _history = history.reversed.toList(); // Show most recent first
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('History of previous weeks will appear here.'),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_history.isEmpty) {
+      return const Center(child: Text('No previous weeks yet.'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _history.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final entry = _history[index];
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.label,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...WeeksMenuPage.daysOfWeek.map((day) {
+                  final dishEntry = entry.menu[day];
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        child: Text(day,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      if (dishEntry?.dishName != null)
+                        Expanded(
+                          child: Text(
+                            dishEntry!.dishName!,
+                            style: TextStyle(
+                              color: dishEntry.cooked
+                                  ? Colors.green
+                                  : Colors.black87,
+                              decoration: dishEntry.cooked
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        )
+                      else
+                        const Expanded(child: Text('-')),
+                      if (dishEntry?.cooked == true)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 8.0),
+                          child:
+                              Icon(Icons.check, color: Colors.green, size: 18),
+                        ),
+                    ],
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

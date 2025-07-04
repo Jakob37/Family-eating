@@ -188,7 +188,7 @@ class _MainAppState extends State<MainApp> {
 
     return MaterialApp(
       home: DefaultTabController(
-        length: 2,
+        length: 3,
         child: Builder(
           builder: (context) => Scaffold(
             appBar: AppBar(
@@ -198,6 +198,7 @@ class _MainAppState extends State<MainApp> {
                 tabs: [
                   Tab(text: "Week's Menu"),
                   Tab(text: 'Food Planning'),
+                  Tab(text: 'History'),
                 ],
               ),
             ),
@@ -247,6 +248,7 @@ class _MainAppState extends State<MainApp> {
                           ],
                         ),
                       ),
+                      const HistoryPage(),
                     ],
                   ),
             floatingActionButton: Builder(
@@ -257,15 +259,37 @@ class _MainAppState extends State<MainApp> {
                   builder: (context, child) {
                     if (tabController.index == 0) {
                       // Week's Menu tab
-                      return FloatingActionButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Add to week\'s menu (not implemented yet)')),
+                      return FloatingActionButton.extended(
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Finish Week'),
+                              content: const Text(
+                                  'Are you sure you want to clear the week?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  child: const Text('Yes, clear'),
+                                ),
+                              ],
+                            ),
                           );
+                          if (confirmed == true) {
+                            // Clear the week
+                            final weeksMenuState = context
+                                .findAncestorStateOfType<_WeeksMenuPageState>();
+                            weeksMenuState?.clearWeek();
+                          }
                         },
-                        child: const Icon(Icons.add),
+                        icon: const Icon(Icons.check),
+                        label: const Text('Week is done'),
                       );
                     } else if (tabController.index == 1) {
                       // Food Planning tab
@@ -601,6 +625,26 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
           },
         );
       },
+    );
+  }
+
+  void clearWeek() {
+    setState(() {
+      _menu = {
+        for (final day in WeeksMenuPage.daysOfWeek) day: WeeksMenuEntry()
+      };
+    });
+    DishStorageWeeksMenu.saveWeeksMenu(_menu);
+  }
+}
+
+class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('History of previous weeks will appear here.'),
     );
   }
 }

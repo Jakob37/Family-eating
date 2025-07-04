@@ -97,6 +97,7 @@ class _MainAppState extends State<MainApp> {
   late List<Dish> _dishes;
   DishCategory? _selectedCategory;
   bool _loading = true;
+  final GlobalKey<_WeeksMenuPageState> _weeksMenuKey = GlobalKey<_WeeksMenuPageState>();
 
   @override
   void initState() {
@@ -207,7 +208,7 @@ class _MainAppState extends State<MainApp> {
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [
-                      const WeeksMenuPage(),
+                      WeeksMenuPage(key: _weeksMenuKey),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Column(
@@ -284,9 +285,7 @@ class _MainAppState extends State<MainApp> {
                           );
                           if (confirmed == true) {
                             // Clear the week
-                            final weeksMenuState = context
-                                .findAncestorStateOfType<_WeeksMenuPageState>();
-                            weeksMenuState?.clearWeek();
+                            _weeksMenuKey.currentState?.clearWeek();
                           }
                         },
                         icon: const Icon(Icons.check),

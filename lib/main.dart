@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dish_storage.dart';
+import 'package:flutter/services.dart';
 
 class AppConstants {
   static const double dishFontSize = 16.0;
@@ -119,66 +120,91 @@ class _MainAppState extends State<MainApp> {
     return MaterialApp(
       home: DefaultTabController(
         length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Family Eating'),
-            centerTitle: true,
-            bottom: const TabBar(
-              tabs: [
-                Tab(text: "Week's Menu"),
-                Tab(text: 'Food Planning'),
-              ],
+        child: Builder(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: const Text('Family Eating'),
+              centerTitle: true,
+              bottom: const TabBar(
+                tabs: [
+                  Tab(text: "Week's Menu"),
+                  Tab(text: 'Food Planning'),
+                ],
+              ),
+            ),
+            body: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    children: [
+                      const WeeksMenuPage(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Text('Filter: ',
+                                    style: TextStyle(fontSize: 16)),
+                                DropdownButton<DishCategory?>(
+                                  value: _selectedCategory,
+                                  hint: const Text('All'),
+                                  items: [
+                                    const DropdownMenuItem<DishCategory?>(
+                                      value: null,
+                                      child: Text('All'),
+                                    ),
+                                    ...DishCategory.values.map((cat) =>
+                                        DropdownMenuItem<DishCategory?>(
+                                          value: cat,
+                                          child: Text(categoryToString(cat)),
+                                        )),
+                                  ],
+                                  onChanged: (cat) {
+                                    setState(() {
+                                      _selectedCategory = cat;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: DishList(
+                                dishes: filteredDishes,
+                                onIncrement: _incrementDishCount,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+            floatingActionButton: Builder(
+              builder: (context) {
+                final tabController = DefaultTabController.of(context);
+                return AnimatedBuilder(
+                  animation: tabController,
+                  builder: (context, child) {
+                    // Show FAB only on the Food Planning tab (index 1)
+                    return tabController.index == 1
+                        ? FloatingActionButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Add new dish (not implemented yet)')),
+                              );
+                            },
+                            child: const Icon(Icons.add),
+                          )
+                        : const SizedBox.shrink();
+                  },
+                );
+              },
             ),
           ),
-          body: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : TabBarView(
-                  children: [
-                    const WeeksMenuPage(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Text('Filter: ',
-                                  style: TextStyle(fontSize: 16)),
-                              DropdownButton<DishCategory?>(
-                                value: _selectedCategory,
-                                hint: const Text('All'),
-                                items: [
-                                  const DropdownMenuItem<DishCategory?>(
-                                    value: null,
-                                    child: Text('All'),
-                                  ),
-                                  ...DishCategory.values.map(
-                                      (cat) => DropdownMenuItem<DishCategory?>(
-                                            value: cat,
-                                            child: Text(categoryToString(cat)),
-                                          )),
-                                ],
-                                onChanged: (cat) {
-                                  setState(() {
-                                    _selectedCategory = cat;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: DishList(
-                              dishes: filteredDishes,
-                              onIncrement: _incrementDishCount,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
         ),
       ),
     );

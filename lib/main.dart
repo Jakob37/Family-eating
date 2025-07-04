@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dish_storage.dart';
 import 'package:flutter/services.dart';
+import 'ui_components.dart';
 
 class AppConstants {
   static const double dishFontSize = 16.0;
@@ -585,56 +586,19 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
           );
           cardColor = kCategoryColors[selectedDish.category] ?? kCardColor;
         }
-        return InkWell(
+        return WeekMenuCard(
+          day: day,
+          dish: dish,
+          cooked: cooked,
+          cardColor: cardColor,
           onTap: () => _selectDish(context, day),
-          child: Card(
-            color: cardColor,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          day,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        if (dish != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2.0),
-                            child: Text(
-                              dish,
-                              style: const TextStyle(
-                                  fontSize: 14, color: Colors.black54),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Transform.scale(
-                    scale: 1.4,
-                    child: Checkbox(
-                      value: cooked,
-                      onChanged: dish == null
-                          ? null
-                          : (val) {
-                              setState(() {
-                                _menu[day] = WeeksMenuEntry(
-                                    dishName: dish, cooked: val ?? false);
-                              });
-                              _saveMenu();
-                            },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          onCookedChanged: (val) {
+            if (dish == null) return;
+            setState(() {
+              _menu[day] = WeeksMenuEntry(dishName: dish, cooked: val ?? false);
+            });
+            _saveMenu();
+          },
         );
       },
     );

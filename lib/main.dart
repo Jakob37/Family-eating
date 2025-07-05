@@ -26,14 +26,24 @@ class Dish {
   final String name;
   int count;
   DishCategory category;
+  String info;
+  String? customCategory;
 
-  Dish({required this.name, required this.count, required this.category});
+  Dish({
+    required this.name,
+    required this.count,
+    required this.category,
+    this.customCategory,
+    this.info = '',
+  });
 
   factory Dish.fromJson(Map<String, dynamic> json) {
     return Dish(
       name: json['name'] as String,
       count: json['count'] as int,
       category: DishCategory.values[json['category'] as int],
+      customCategory: json['customCategory'] as String?,
+      info: json['info'] as String? ?? '',
     );
   }
 
@@ -41,6 +51,8 @@ class Dish {
         'name': name,
         'count': count,
         'category': category.index,
+        'customCategory': customCategory,
+        'info': info,
       };
 }
 
@@ -108,7 +120,13 @@ class _MainAppState extends State<MainApp> {
 
   Future<void> _loadDishes() async {
     _dishes = await DishStorage.loadDishes(MainApp.dishes
-        .map((d) => Dish(name: d.name, count: d.count, category: d.category))
+        .map((d) => Dish(
+              name: d.name,
+              count: d.count,
+              category: d.category,
+              customCategory: d.customCategory,
+              info: d.info,
+            ))
         .toList());
     setState(() {
       _loading = false;
@@ -325,7 +343,7 @@ class DishList extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                categoryToString(dish.category),
+                                getDishCategoryLabel(dish),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.black38,
@@ -362,11 +380,13 @@ class _DishDetailPageState extends State<DishDetailPage> {
   List<String> _customCategories = [];
   String? _selectedCustomCategory;
   bool _loading = true;
+  late TextEditingController _infoController;
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.dish.category;
+    _infoController = TextEditingController(text: widget.dish.info);
     _loadCustomCategories();
   }
 
@@ -374,10 +394,15 @@ class _DishDetailPageState extends State<DishDetailPage> {
     final cats = await DishStorageCategories.loadCustomCategories();
     setState(() {
       _customCategories = cats;
+      if (widget.dish.customCategory != null &&
+          widget.dish.customCategory!.isNotEmpty &&
+          !_customCategories.contains(widget.dish.customCategory)) {
+        _customCategories.add(widget.dish.customCategory!);
+      }
       _loading = false;
       if (_selectedCategory == DishCategory.other &&
-          cats.contains(widget.dish.name)) {
-        _selectedCustomCategory = widget.dish.name;
+          widget.dish.customCategory != null) {
+        _selectedCustomCategory = widget.dish.customCategory;
       }
     });
   }
@@ -386,14 +411,34 @@ class _DishDetailPageState extends State<DishDetailPage> {
     await DishStorageCategories.saveCustomCategories(_customCategories);
   }
 
+  Future<void> _saveDish() async {
+    final dishes = await DishStorage.loadDishes(MainApp.dishes);
+    final idx = dishes.indexWhere((d) => d.name == widget.dish.name);
+    if (idx != -1) {
+      dishes[idx] = widget.dish;
+      await DishStorage.saveDishes(dishes);
+    }
+  }
+
+  void _saveInfo(String info) {
+    setState(() {
+      widget.dish.info = info;
+    });
+    _saveDish();
+  }
+
+  @override
+  void dispose() {
+    _infoController.dispose();
+    super.dispose();
+  }
+
   void _updateCategory(DishCategory? cat, [String? customCat]) async {
     setState(() {
       _selectedCategory = cat;
       _selectedCustomCategory = customCat;
     });
-    if (cat == DishCategory.other &&
-        customCat != null &&
-        customCat.isNotEmpty) {
+    if (cat == DishCategory.other && customCat != null && customCat.isNotEmpty) {
       if (!_customCategories.contains(customCat)) {
         setState(() {
           _customCategories.add(customCat);
@@ -402,19 +447,15 @@ class _DishDetailPageState extends State<DishDetailPage> {
       }
       setState(() {
         widget.dish.category = DishCategory.other;
+        widget.dish.customCategory = customCat;
       });
     } else if (cat != null) {
       setState(() {
         widget.dish.category = cat;
+        widget.dish.customCategory = null;
       });
     }
-    // Save dish update to storage
-    final dishes = await DishStorage.loadDishes(MainApp.dishes);
-    final idx = dishes.indexWhere((d) => d.name == widget.dish.name);
-    if (idx != -1) {
-      dishes[idx].category = widget.dish.category;
-      await DishStorage.saveDishes(dishes);
-    }
+    await _saveDish();
   }
 
   @override
@@ -510,9 +551,14 @@ class _DishDetailPageState extends State<DishDetailPage> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Placeholder info about this dish.',
-              style: TextStyle(fontSize: 18),
+            TextField(
+              controller: _infoController,
+              decoration: const InputDecoration(
+                labelText: 'Info',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: null,
+              onChanged: _saveInfo,
             ),
             const SizedBox(height: 24),
             Text(
@@ -550,6 +596,15 @@ String categoryToString(DishCategory category) {
     case DishCategory.other:
       return 'Other';
   }
+}
+
+String getDishCategoryLabel(Dish dish) {
+  if (dish.category == DishCategory.other &&
+      dish.customCategory != null &&
+      dish.customCategory!.isNotEmpty) {
+    return dish.customCategory!;
+  }
+  return categoryToString(dish.category);
 }
 
 class WeeksMenuPage extends StatefulWidget {
@@ -707,7 +762,7 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        categoryToString(dish.category),
+                                        getDishCategoryLabel(dish),
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                     ),

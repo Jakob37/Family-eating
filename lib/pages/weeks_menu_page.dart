@@ -5,8 +5,11 @@ import '../dish_storage.dart';
 import '../models/dish.dart';
 import '../ui_components.dart';
 
+typedef IncrementDishesCallback = void Function(List<String> dishNames);
+
 class WeeksMenuPage extends StatefulWidget {
-  const WeeksMenuPage({super.key});
+  final IncrementDishesCallback? onIncrementDishes;
+  const WeeksMenuPage({super.key, this.onIncrementDishes});
 
   static const List<String> daysOfWeek = [
     'Monday',
@@ -96,7 +99,8 @@ class WeeksMenuPageState extends State<WeeksMenuPage> {
                                       child: Text(categoryToString(cat)),
                                     )),
                           ],
-                          onChanged: (cat) => setState(() => filterCategory = cat),
+                          onChanged: (cat) =>
+                              setState(() => filterCategory = cat),
                         ),
                       ],
                     ),
@@ -231,7 +235,8 @@ class WeeksMenuPageState extends State<WeeksMenuPage> {
         if (dish != null) {
           final selectedDish = MainApp.dishes.firstWhere(
             (d) => d.name == dish,
-            orElse: () => Dish(name: '', count: 0, category: DishCategory.other),
+            orElse: () =>
+                Dish(name: '', count: 0, category: DishCategory.other),
           );
           cardColor = kCategoryColors[selectedDish.category] ?? kCardColor;
         }
@@ -257,12 +262,23 @@ class WeeksMenuPageState extends State<WeeksMenuPage> {
     final label = _label;
     final menuCopy = {
       for (final e in _menu.entries)
-        e.key: WeeksMenuEntry(dishName: e.value.dishName, cooked: e.value.cooked)
+        e.key:
+            WeeksMenuEntry(dishName: e.value.dishName, cooked: e.value.cooked)
     };
     final entry = WeeksMenuHistoryEntry(label: label, menu: menuCopy);
     final history = await DishStorageWeeksMenuHistory.loadWeeksMenuHistory();
     history.add(entry);
     await DishStorageWeeksMenuHistory.saveWeeksMenuHistory(history);
+
+    // Gather cooked dish names
+    final cookedDishNames = _menu.entries
+        .where((e) => e.value.dishName != null && e.value.cooked)
+        .map((e) => e.value.dishName!)
+        .toList();
+    if (widget.onIncrementDishes != null && cookedDishNames.isNotEmpty) {
+      widget.onIncrementDishes!(cookedDishNames);
+    }
+
     setState(() {
       _menu = {
         for (final day in WeeksMenuPage.daysOfWeek) day: WeeksMenuEntry()

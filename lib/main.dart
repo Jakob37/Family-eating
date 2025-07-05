@@ -23,24 +23,33 @@ class MainApp extends StatefulWidget {
     Dish(name: 'Korv + rösti', count: 1, category: DishCategory.pork),
     Dish(name: 'Kyckling i ugn', count: 2, category: DishCategory.other),
     Dish(name: 'Lax teriyaki', count: 1, category: DishCategory.fish),
-    Dish(name: 'Stekta ägg och kinesisk pannkaka',
-        count: 2, category: DishCategory.egg),
+    Dish(
+        name: 'Stekta ägg och kinesisk pannkaka',
+        count: 2,
+        category: DishCategory.egg),
     Dish(name: 'Tomat crumbled eggs', count: 3, category: DishCategory.egg),
-    Dish(name: 'Kyckling och rostad potatis',
-        count: 1, category: DishCategory.other),
-    Dish(name: 'Tofu, nudlar, grönsaker', count: 2, category: DishCategory.tofu),
+    Dish(
+        name: 'Kyckling och rostad potatis',
+        count: 1,
+        category: DishCategory.other),
+    Dish(
+        name: 'Tofu, nudlar, grönsaker', count: 2, category: DishCategory.tofu),
     Dish(name: 'Våfflor', count: 1, category: DishCategory.egg),
     Dish(name: 'Fiskpinnar och potatis', count: 1, category: DishCategory.fish),
     Dish(name: 'Korv med bröd', count: 1, category: DishCategory.pork),
     Dish(name: 'Currykyckling', count: 1, category: DishCategory.other),
-    Dish(name: 'Köttbullar och potatismos',
-        count: 1, category: DishCategory.beef),
+    Dish(
+        name: 'Köttbullar och potatismos',
+        count: 1,
+        category: DishCategory.beef),
     Dish(name: 'Pytt i panna med keso', count: 2, category: DishCategory.other),
     Dish(name: 'Lax och potatis', count: 1, category: DishCategory.fish),
     Dish(name: 'Veganköttbullar', count: 1, category: DishCategory.tofu),
     Dish(name: 'Quesadilla', count: 1, category: DishCategory.other),
-    Dish(name: 'Grillat kött med potatis',
-        count: 1, category: DishCategory.beef),
+    Dish(
+        name: 'Grillat kött med potatis',
+        count: 1,
+        category: DishCategory.beef),
   ];
 
   @override
@@ -109,7 +118,21 @@ class _MainAppState extends State<MainApp> {
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [
-                      WeeksMenuPage(key: _weeksMenuKey),
+                      WeeksMenuPage(
+                        key: _weeksMenuKey,
+                        onIncrementDishes: (dishNames) {
+                          setState(() {
+                            for (final name in dishNames) {
+                              final matches =
+                                  _dishes.where((d) => d.name == name);
+                              if (matches.isNotEmpty) {
+                                matches.first.count += 1;
+                              }
+                            }
+                          });
+                          DishStorage.saveDishes(_dishes);
+                        },
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Column(
@@ -215,4 +238,3 @@ class _MainAppState extends State<MainApp> {
     );
   }
 }
-

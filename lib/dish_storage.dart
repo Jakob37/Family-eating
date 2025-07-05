@@ -121,3 +121,24 @@ class DishStorageWeeksMenuHistory {
     await prefs.setString(_weeksMenuHistoryKey, jsonString);
   }
 }
+
+class DishStorageCategories {
+  static const String _customCategoriesKey = 'custom_categories';
+
+  static Future<List<String>> loadCustomCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_customCategoriesKey);
+    if (jsonString != null) {
+      final List<dynamic> jsonList = json.decode(jsonString);
+      return jsonList.cast<String>();
+    } else {
+      return [];
+    }
+  }
+
+  static Future<void> saveCustomCategories(List<String> categories) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = json.encode(categories);
+    await prefs.setString(_customCategoriesKey, jsonString);
+  }
+}

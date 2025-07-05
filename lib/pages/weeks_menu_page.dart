@@ -155,7 +155,7 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        categoryToString(dish.category),
+                                        getDishCategoryLabel(dish),
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                     ),

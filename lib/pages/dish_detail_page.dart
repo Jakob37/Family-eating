@@ -24,11 +24,13 @@ class _DishDetailPageState extends State<DishDetailPage> {
   List<String> _customCategories = [];
   String? _selectedCustomCategory;
   bool _loading = true;
+  late TextEditingController _infoController;
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.dish.category;
+    _infoController = TextEditingController(text: widget.dish.info);
     _loadCustomCategories();
   }
 
@@ -36,16 +38,37 @@ class _DishDetailPageState extends State<DishDetailPage> {
     final cats = await DishStorageCategories.loadCustomCategories();
     setState(() {
       _customCategories = cats;
+      if (widget.dish.customCategory != null &&
+          widget.dish.customCategory!.isNotEmpty &&
+          !_customCategories.contains(widget.dish.customCategory)) {
+        _customCategories.add(widget.dish.customCategory!);
+      }
       _loading = false;
       if (_selectedCategory == DishCategory.other &&
-          cats.contains(widget.dish.name)) {
-        _selectedCustomCategory = widget.dish.name;
+          widget.dish.customCategory != null) {
+        _selectedCustomCategory = widget.dish.customCategory;
       }
     });
   }
 
   Future<void> _saveCustomCategories() async {
     await DishStorageCategories.saveCustomCategories(_customCategories);
+  }
+
+  Future<void> _saveDish() async {
+    final dishes = await DishStorage.loadDishes(widget.defaultDishes);
+    final idx = dishes.indexWhere((d) => d.name == widget.dish.name);
+    if (idx != -1) {
+      dishes[idx] = widget.dish;
+      await DishStorage.saveDishes(dishes);
+    }
+  }
+
+  void _saveInfo(String info) {
+    setState(() {
+      widget.dish.info = info;
+    });
+    _saveDish();
   }
 
   void _updateCategory(DishCategory? cat, [String? customCat]) async {
@@ -64,19 +87,21 @@ class _DishDetailPageState extends State<DishDetailPage> {
       }
       setState(() {
         widget.dish.category = DishCategory.other;
+        widget.dish.customCategory = customCat;
       });
     } else if (cat != null) {
       setState(() {
         widget.dish.category = cat;
+        widget.dish.customCategory = null;
       });
     }
-    // Save dish update to storage
-    final dishes = await DishStorage.loadDishes(widget.defaultDishes);
-    final idx = dishes.indexWhere((d) => d.name == widget.dish.name);
-    if (idx != -1) {
-      dishes[idx].category = widget.dish.category;
-      await DishStorage.saveDishes(dishes);
-    }
+    await _saveDish();
+  }
+
+  @override
+  void dispose() {
+    _infoController.dispose();
+    super.dispose();
   }
 
   @override
@@ -171,9 +196,14 @@ class _DishDetailPageState extends State<DishDetailPage> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Placeholder info about this dish.',
-              style: TextStyle(fontSize: 18),
+            TextField(
+              controller: _infoController,
+              decoration: const InputDecoration(
+                labelText: 'Info',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: null,
+              onChanged: _saveInfo,
             ),
             const SizedBox(height: 24),
             Text(

@@ -71,7 +71,13 @@ class _MainAppState extends State<MainApp> {
 
   Future<void> _loadDishes() async {
     _dishes = await DishStorage.loadDishes(MainApp.dishes
-        .map((d) => Dish(name: d.name, count: d.count, category: d.category))
+        .map((d) => Dish(
+              name: d.name,
+              count: d.count,
+              category: d.category,
+              customCategory: d.customCategory,
+              info: d.info,
+            ))
         .toList());
     setState(() {
       _loading = false;
@@ -150,6 +156,7 @@ class _MainAppState extends State<MainApp> {
                               child: DishList(
                                 dishes: filteredDishes,
                                 onIncrement: _incrementDishCount,
+                                defaultDishes: MainApp.dishes,
                               ),
                             ),
                           ],

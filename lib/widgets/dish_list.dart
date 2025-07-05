@@ -6,8 +6,14 @@ import '../pages/dish_detail_page.dart';
 class DishList extends StatelessWidget {
   final List<Dish> dishes;
   final void Function(String dishName) onIncrement;
+  final List<Dish> defaultDishes;
 
-  const DishList({super.key, required this.dishes, required this.onIncrement});
+  const DishList({
+    super.key,
+    required this.dishes,
+    required this.onIncrement,
+    required this.defaultDishes,
+  });
 
   void _openDishDetail(BuildContext context, Dish dish) {
     Navigator.push(
@@ -16,6 +22,7 @@ class DishList extends StatelessWidget {
         builder: (context) => DishDetailPage(
           dish: dish,
           onIncrement: () => onIncrement(dish.name),
+          defaultDishes: defaultDishes,
         ),
       ),
     );
@@ -68,7 +75,7 @@ class DishList extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                categoryToString(dish.category),
+                                getDishCategoryLabel(dish),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.black38,

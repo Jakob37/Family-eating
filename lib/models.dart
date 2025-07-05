@@ -22,14 +22,24 @@ class Dish {
   final String name;
   int count;
   DishCategory category;
+  String info;
+  String? customCategory;
 
-  Dish({required this.name, required this.count, required this.category});
+  Dish({
+    required this.name,
+    required this.count,
+    required this.category,
+    this.customCategory,
+    this.info = '',
+  });
 
   factory Dish.fromJson(Map<String, dynamic> json) {
     return Dish(
       name: json['name'] as String,
       count: json['count'] as int,
       category: DishCategory.values[json['category'] as int],
+      customCategory: json['customCategory'] as String?,
+      info: json['info'] as String? ?? '',
     );
   }
 
@@ -37,6 +47,8 @@ class Dish {
         'name': name,
         'count': count,
         'category': category.index,
+        'customCategory': customCategory,
+        'info': info,
       };
 }
 
@@ -56,4 +68,13 @@ String categoryToString(DishCategory category) {
     case DishCategory.other:
       return 'Other';
   }
+}
+
+String getDishCategoryLabel(Dish dish) {
+  if (dish.category == DishCategory.other &&
+      dish.customCategory != null &&
+      dish.customCategory!.isNotEmpty) {
+    return dish.customCategory!;
+  }
+  return categoryToString(dish.category);
 }

@@ -123,7 +123,6 @@ class _MainAppState extends State<MainApp> {
     DishStorage.saveDishes(_dishes);
   }
 
-
   @override
   Widget build(BuildContext context) {
     // Filter dishes by selected category if set
@@ -345,7 +344,6 @@ class DishList extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class DishDetailPage extends StatelessWidget {
@@ -394,7 +392,6 @@ class DishDetailPage extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // Helper for category display names
@@ -472,35 +469,127 @@ class _WeeksMenuPageState extends State<WeeksMenuPage> {
   }
 
   Future<void> _selectDish(BuildContext context, String day) async {
-    final dishes = MainApp.dishes;
+    final allDishes = MainApp.dishes;
+    DishCategory? filterCategory;
     String? selected = _menu[day]?.dishName;
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Select dish for $day'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: dishes.map((dish) {
-                return RadioListTile<String>(
-                  title: Text(dish.name),
-                  value: dish.name,
-                  groupValue: selected,
-                  onChanged: (value) {
-                    Navigator.of(context).pop(value);
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final filteredDishes = filterCategory == null
+                ? allDishes
+                : allDishes.where((d) => d.category == filterCategory).toList();
+            return AlertDialog(
+              title: Text('Select dish for $day'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('Filter: '),
+                        DropdownButton<DishCategory?>(
+                          value: filterCategory,
+                          hint: const Text('All'),
+                          items: [
+                            const DropdownMenuItem<DishCategory?>(
+                              value: null,
+                              child: Text('All'),
+                            ),
+                            ...DishCategory.values
+                                .map((cat) => DropdownMenuItem<DishCategory?>(
+                                      value: cat,
+                                      child: Text(categoryToString(cat)),
+                                    )),
+                          ],
+                          onChanged: (cat) =>
+                              setState(() => filterCategory = cat),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount: 1,
+                        childAspectRatio: 3.5,
+                        shrinkWrap: true,
+                        children: filteredDishes.map((dish) {
+                          final isSelected = dish.name == selected;
+                          return GestureDetector(
+                            onTap: () => Navigator.of(context).pop(dish.name),
+                            child: Card(
+                              color: isSelected
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.2)
+                                  : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                side: isSelected
+                                    ? BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 2)
+                                    : BorderSide(
+                                        color: Colors.grey.shade300, width: 1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        dish.name,
+                                        style: TextStyle(
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: isSelected
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                              : Colors.black87,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: kCategoryColors[dish.category]
+                                            ?.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        categoryToString(dish.category),
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

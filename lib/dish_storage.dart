@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart'; // For the Dish class and MainApp.dishes
+import 'models/dish.dart';
 
 class DishStorage {
   static const String _storageKey = 'dishes_data';

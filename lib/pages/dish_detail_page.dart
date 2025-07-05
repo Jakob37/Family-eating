@@ -6,7 +6,8 @@ class DishDetailPage extends StatefulWidget {
   final Dish dish;
   final VoidCallback onIncrement;
 
-  const DishDetailPage({super.key, required this.dish, required this.onIncrement});
+  const DishDetailPage(
+      {super.key, required this.dish, required this.onIncrement});
 
   @override
   State<DishDetailPage> createState() => _DishDetailPageState();
@@ -75,7 +76,9 @@ class _DishDetailPageState extends State<DishDetailPage> {
       _selectedCategory = cat;
       _selectedCustomCategory = customCat;
     });
-    if (cat == DishCategory.other && customCat != null && customCat.isNotEmpty) {
+    if (cat == DishCategory.other &&
+        customCat != null &&
+        customCat.isNotEmpty) {
       if (!_customCategories.contains(customCat)) {
         setState(() {
           _customCategories.add(customCat);
@@ -159,8 +162,8 @@ class _DishDetailPageState extends State<DishDetailPage> {
                               title: const Text('Add new category'),
                               content: TextField(
                                 autofocus: true,
-                                decoration:
-                                    const InputDecoration(labelText: 'Category name'),
+                                decoration: const InputDecoration(
+                                    labelText: 'Category name'),
                                 onChanged: (v) => input = v,
                               ),
                               actions: [
@@ -169,7 +172,8 @@ class _DishDetailPageState extends State<DishDetailPage> {
                                   child: const Text('Cancel'),
                                 ),
                                 ElevatedButton(
-                                  onPressed: () => Navigator.of(context).pop(input),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(input),
                                   child: const Text('Add'),
                                 ),
                               ],
@@ -195,6 +199,35 @@ class _DishDetailPageState extends State<DishDetailPage> {
               ),
               maxLines: null,
               onChanged: _saveInfo,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Cooked count:', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 80,
+                  child: TextFormField(
+                    initialValue: widget.dish.count.toString(),
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    ),
+                    onChanged: (val) async {
+                      final parsed = int.tryParse(val);
+                      if (parsed != null && parsed >= 0) {
+                        setState(() {
+                          widget.dish.count = parsed;
+                        });
+                        await _saveDish();
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             Text(

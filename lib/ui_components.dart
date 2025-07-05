@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main.dart';
+import 'models/dish.dart';
 
 Future<void> showAddDishDialog(
     BuildContext context, void Function(Dish) onAdd) async {

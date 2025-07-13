@@ -49,16 +49,22 @@ class DishStorageWeeksMenu {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_weeksMenuKey);
     if (jsonString != null) {
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      return {
-        for (final day in daysOfWeek)
-          day: jsonMap[day] != null
-              ? WeeksMenuEntry.fromJson(jsonMap[day])
-              : WeeksMenuEntry(),
-      };
-    } else {
-      return {for (final day in daysOfWeek) day: WeeksMenuEntry()};
+      try {
+        final decoded = json.decode(jsonString);
+        if (decoded is Map<String, dynamic>) {
+          return {
+            for (final day in daysOfWeek)
+              day: decoded[day] != null
+                  ? WeeksMenuEntry.fromJson(
+                      decoded[day] as Map<String, dynamic>)
+                  : WeeksMenuEntry(),
+          };
+        }
+      } catch (_) {
+        // ignore errors and fall back to default menu
+      }
     }
+    return {for (final day in daysOfWeek) day: WeeksMenuEntry()};
   }
 
   static Future<void> saveWeeksMenu(Map<String, WeeksMenuEntry> menu) async {

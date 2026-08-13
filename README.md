@@ -1,3 +1,3 @@
 # family_eating
 
-A new Flutter project.
+A Flutter project for planning and tracking family meals.
